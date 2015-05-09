@@ -60,9 +60,9 @@ void SnmpTest::onEventInit()
 
 void SnmpTest::test()
 {
-    //testGetRequest();
+    testGetRequest();
     //testSetRequest();
-    testWalkRequest();
+    //testWalkRequest();
     //testBulkRequest();
     //testTrap();
 }
