@@ -1,12 +1,13 @@
 #pragma once
 
-#include <snmp/snmpdata.h>
-#include <snmp/snmpdatatypes.h>
+#include <qglobal.h>
+#include <qmap.h>
+#include <qobjectdefs.h>
+#include <qstring.h>
+#include <qstringlist.h>
 
-#include <QObject>
-#include <QString>
-#include <QStringList>
-#include <QTimerEvent>
+#include "snmp/snmpdata.h"
+#include "snmp/snmpdatatypes.h"
 
 class SnmpDataPriv : public SnmpData
 {
@@ -37,6 +38,7 @@ public:
     ~SnmpDataPriv();
 
     quint32 getIdRequest() const { return idRequest_; }
+    void setIdRequest(const quint32 & idRequest) { idRequest_ = idRequest; }
 
     Type::Version getVersion() const { return intVersion_; }
     void setVersion(const Type::Version & intVersion) { intVersion_ = intVersion; }
@@ -86,6 +88,21 @@ public:
 
     Type::ErrorMessage getErrorMsg() const { return idErrorMsg_; }
     void setErrorMsg(const Type::ErrorMessage & idErrorMsg) { idErrorMsg_ = idErrorMsg; }
+
+protected:
+    void timerEvent(QTimerEvent *event);
+
+protected:
+    int snmpTimerId_;
+    quint32 snmpTimerRetries_;
+
+public:
+    void snmpTimerStart();
+    void snmpTimerStop();
+
+Q_SIGNALS:
+	void eventSnmpRetry();
+	void eventSnmpTimeout();
 };
 
 //class SnmpTrapInfoPriv : public QObject

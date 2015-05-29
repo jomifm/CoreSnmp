@@ -3,6 +3,8 @@
 #include "types/basic/snmpnullobject.h"
 #include "types/utils/snmptypefactory.h"
 
+#include <snmp/exceptions/snmpexception.h>
+
 #include <QDataStream>
 #include <QDebug>
 

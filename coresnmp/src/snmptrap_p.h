@@ -15,6 +15,9 @@ public:
 private:
     QUdpSocket *socket_;
 
+	void trap(const QString &trapId,
+			const QString &addressSrc, const Type::MSnmpObject &objectMap);
+
     void trap(const QStringList &peerList, const QString &trapId,
     		const QString &addressSrc, const Type::MSnmpObject &objectMap);
 

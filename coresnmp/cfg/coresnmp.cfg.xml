@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE coresnmp-configuration SYSTEM 
+	"coresnmp-configuration-1.0.dtd">
+
+<coresnmp-configuration>
+   
+   <property name="logger.dialect">stdout</property>
+   <property name="logger.level">debug</property>
+   <property name="logger.file">log/coresnmp.log</property>
+   
+   <property name="config.version">1</property>
+   <property name="config.rocommunity">public</property>
+   <property name="config.rwcommunity">private</property>
+   <property name="config.trapcommunity">public</property>
+
+   <property name="connection.request.nms.port">161</property>
+   <property name="connection.request.agent.port">1610</property>
+
+   <property name="connection.trap.nms.address">192.168.255.255</property>
+   <property name="connection.trap.nms.port">1620</property>
+   <property name="connection.trap.agent.port">1620</property>
+
+   <mapping resource="cfg/coresnmp-requests.mib.xml"/>
+   <mapping resource="cfg/coresnmp-traps.mib.xml"/>
+
+</coresnmp-configuration>

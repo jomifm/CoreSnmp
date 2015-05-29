@@ -1,6 +1,7 @@
 #include "snmptrap_p.h"
 
 #include <snmp/snmptrap.h>
+#include <snmp/exceptions/snmpexception.h>
 
 #include "configuration/parameters.h"
 #include "types/snmpversion.h"
@@ -17,17 +18,14 @@
 #include "types/pdu/snmpvarbind.h"
 #include "types/pdu/snmpvarbindlist.h"
 #include "types/utils/snmptypefactory.h"
+#include "utils/logger/utilslogger.h"
 
 #include <QUdpSocket>
-
-#ifdef QT_SNMP_DEBUG
-#include <QDebug>
-#endif
 
 SnmpTrap *SnmpTrap::instance(QObject *parent)
 {
 	//Instancia los parametros de configuracion
-	Parameters::create();
+	Parameters::instance();
 
 	static SnmpTrap *snmpRequest = new SnmpTrapPriv(parent);
 	return snmpRequest;
@@ -36,15 +34,27 @@ SnmpTrap *SnmpTrap::instance(QObject *parent)
 SnmpTrapPriv::SnmpTrapPriv(QObject *parent) :
     SnmpTrap(parent)
 {    
-	qDebug() << "Creating SnmpTrapPriv object";
-	Type::registerMetatypes();
+	LogInfo << "Creating SnmpTrapPriv object";
 
 	//Create new udp socket
 	socket_ = new QUdpSocket(this);
-    socket_->bind(Parameters::getSnmpTrapPortAgent());
+    socket_->bind(QHostAddress::Any, Parameters::get(Params::TrapAgentPort).toInt(),
+    		QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
     connect(socket_,SIGNAL(readyRead()),SLOT(readPendingDatagram()));
 
-    qDebug() << "Socket state:" << socket_->state() << socket_->errorString();
+	//Custom configuration of udp socket
+    socket_->setSocketOption(QAbstractSocket::MulticastTtlOption, 10);
+    socket_->setSocketOption(QAbstractSocket::MulticastLoopbackOption, 1);
+
+    LogInfo << "Socket state:" << socket_->state() << socket_->errorString();
+    if (socket_->error() != QAbstractSocket::UnknownSocketError)
+    	throw SnmpException(QString("Error opening or configuring socket"));
+}
+
+void SnmpTrapPriv::trap(const QString &strTrapId,
+		const QString &addressSrc, const Type::MSnmpObject &objectMap)
+{
+	this->trap (Parameters::get(Params::TrapNmsAddress).split(","), strTrapId, addressSrc, objectMap);
 }
 
 void SnmpTrapPriv::trap(const QStringList &peerList, const QString &strTrapId,
@@ -71,7 +81,7 @@ void SnmpTrapPriv::trap(const QStringList &peerList, const QString &strTrapId,
     trapId = new ObjectIdentifier(strTrapId);
     agentAddr = new IpAddress(addressSrc);
     genericTrap = new Integer(6);
-    specificTrap = new Integer(300); //TODO
+    specificTrap = new Integer(0); //TODO
     timeStamp = new TimerTicks(1); //TODO
 
     //Processing object list
@@ -96,10 +106,10 @@ void SnmpTrapPriv::trap(const QStringList &peerList, const QString &strTrapId,
     for (QStringList::const_iterator iterPeer = peerList.begin();
     		iterPeer != peerList.end(); ++iterPeer)
     	//Send datagram to destination peer
-    	socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::getSnmpTrapPortNms());
+    	socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::get(Params::TrapNmsPort).toInt());
 
-    qDebug() << "SNMP Trap sent" << datagram.toHex().data();
-    qDebug() << snmpMessage.toString();
+    LogInfo << "SNMP Trap sent" << datagram.toHex().data();
+    LogInfo << snmpMessage.toString();
 }
 
 void SnmpTrapPriv::readPendingDatagram()
@@ -143,8 +153,8 @@ void SnmpTrapPriv::readPendingDatagram()
             responseList_.append(varbind->getValue()->toString());
         }
 
-        qDebug() << "SNMP Trap received" << datagram.toHex().data();
-        qDebug() << snmpMessage.toString();
+        LogInfo << "SNMP Trap received" << datagram.toHex().data();
+        LogInfo << snmpMessage.toString();
 
         //Emit response event for registered listeners
         emit eventSnmpReceiveTrap(responseList_);

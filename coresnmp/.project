@@ -64,7 +64,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.environment</key>
-					<value>PATH=/opt/Qt5.4.1/5.4/gcc/bin:${env_var:PATH}:${env_var:PATH}:/usr/local/Trolltech/Qt-4.8.3/bin|</value>
+					<value>PATH=/usr/local/Trolltech/Qt-4.8.3/bin:${env_var:PATH}:${env_var:PATH}|</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.stopOnError</key>

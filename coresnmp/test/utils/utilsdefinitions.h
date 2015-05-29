@@ -1,7 +1,7 @@
 #ifndef CORESIMDEFINITIONS_H
 #define CORESIMDEFINITIONS_H
 
-#include "test/utils/logger/utilslogger.h"
+#include "utils/logger/utilslogger.h"
 #if unix
 #include <signal.h>
 #endif
@@ -72,7 +72,7 @@ public:
             return QCoreApplication::notify(poObjectReceiver, poEvent);
         }
         catch(std::exception& e) {
-            LogError() << "Exception thrown:" << QString(e.what());
+            LogError << "Exception thrown:" << QString(e.what());
         }
         return false;
     }

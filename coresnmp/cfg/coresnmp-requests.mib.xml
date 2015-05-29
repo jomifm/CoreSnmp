@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE coresnmp-configuration SYSTEM 
+	"coresnmp-configuration-1.0.dtd">
+
+<coresnmp-mapping>
+
+	<object name="enterprises" oid="1.3.6.1.4.1"/>
+	<object name="company" oid="91" parent="enterprises"/>
+	<object name="product" oid="92" parent="company"/>
+	<object name="project" oid="93" parent="product"/>
+	
+	<object name="testGroupVariables" oid="1" parent="project">
+   		<object name="testString1" oid="1" type="string" access="read-write" description="" />
+   		<object name="testString2" oid="2" type="string" access="read-write" />
+   		<object name="testString3" oid="3" type="string" access="read-write" />
+   		<object name="testString4" oid="4" type="string" access="read-write" />
+   		<object name="testInt1" oid="5" type="integer" access="read-write" />
+   		<object name="testInt2" oid="6" type="integer" access="read-write" />
+   		<object name="testIp1" oid="7" type="ipaddress" access="read-write" />
+   		<object name="testIp2" oid="8" type="ipaddress" access="read-write" />
+	</object>
+	
+</coresnmp-mapping>

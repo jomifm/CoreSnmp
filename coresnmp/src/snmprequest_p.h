@@ -34,5 +34,8 @@ private:
 private Q_SLOTS:
     void readPendingDatagram();
 
+    void onEventSnmpRetry();
+    void onEventSnmpTimeout();
+
 };
 

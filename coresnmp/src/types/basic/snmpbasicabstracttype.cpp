@@ -1,9 +1,11 @@
 #include "types/basic/snmpbasicabstracttype.h"
 
 #include "types/utils/snmptypefactory.h"
+#include "utils/logger/utilslogger.h"
+
+#include <snmp/exceptions/snmpexception.h>
 
 #include <QDataStream>
-
 #include <QDebug>
 
 static const quint32 TYPE_SIZE = 1;
@@ -56,9 +58,9 @@ int SnmpBasicAbstractType::decode(QDataStream &inputStream)
     }
     else inputStream >> dataLength32;
 
-    qDebug() << "Start decoding:" << this;
+    LogInfo << "Start decoding:" << this;
     decodeData(inputStream, dataLength32);
-    qDebug() << "Decoded:" << this;
+    LogInfo << "Decoded:" << this;
 
     return intSizeLenght_ + dataLength32;
 }

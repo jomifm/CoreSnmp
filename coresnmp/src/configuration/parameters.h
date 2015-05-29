@@ -1,11 +1,32 @@
 #pragma once
 
 #include <QtCore/QObject>
-#include <QStringList>
+#include <QtCore/QMap>
+#include <QtCore/QStringList>
 
 class QSettings;
 class QString;
 class QVariant;
+class SnmpXmlMapper;
+
+namespace Params
+{
+	const QString LoggerDialect = QString("logger.dialect");
+	const QString LoggerLevel = QString("logger.level");
+	const QString LoggerFile = QString("logger.file");
+
+	const QString Version = QString("config.version");
+	const QString RoCommunity = QString("config.rocommunity");
+	const QString RwCommunity = QString("config.rwcommunity");
+	const QString TrapCommunity = QString("config.trapcommunity");
+
+	const QString NmsPort = QString("connection.request.nms.port");
+	const QString AgentPort = QString("connection.request.agent.port");
+
+	const QString TrapNmsAddress = QString("connection.trap.nms.address");
+	const QString TrapNmsPort = QString("connection.trap.nms.port");
+	const QString TrapAgentPort = QString("connection.trap.agent.port");
+}
 
 class Parameters : public QObject
 {
@@ -28,28 +49,13 @@ public:
      * @param poParent
      * @return
      */
-    static Parameters *create(QObject *poParent = 0) {
+    static Parameters *instance(QObject *poParent = 0) {
         if (snmpparams_ == NULL)
             snmpparams_ = new Parameters(poParent);
         return snmpparams_;
     }
 
-    //Parametros Generales
-    static QString getGeneralVersion() { return snmpparams_->strGeneralVersion; }
-
-    //Parametros de Logger
-    static QString getLoggerLevel() { return snmpparams_->strLoggerLevel; }
-    static QString getLoggerFile() { return snmpparams_->strLoggerFile; }
-
-    //Parametros de comunicaciones para petitiones y respuestas
-    static int getSnmpPortNms() { return snmpparams_->intSnmpPortNms; }
-    static int getSnmpPortAgent() { return snmpparams_->intSnmpPortAgent; }
-
-    //Parametros de comunicaciones para traps
-    static int getSnmpTrapPortNms() { return snmpparams_->intSnmpTrapPortNms; }
-    static int getSnmpTrapPortAgent() { return snmpparams_->intSnmpTrapPortAgent; }
-    static QStringList getSnmpTrapAddressNms() { return snmpparams_->strSnmpTrapAddressNms; }
-    static QString getSnmpTrapAddressAgent() { return snmpparams_->strSnmpTrapAddressAgent; }
+    static QString get(const QString & str);
 
 private:
     /**
@@ -70,27 +76,11 @@ private:
      */
     QVariant getParam(QSettings *settings, QString strParam, QString strDefault);
 
-    /**
-     * @brief Reconfigura los Parametros de Configuracion
-     */
-    void reconfigureParameters();
+    //Mapping configuration xml file
+    SnmpXmlMapper *mapper_;
 
-    //Parametros Generales
-    QString strGeneralVersion;
-
-    //Parametros de Logger
-    QString strLoggerLevel;
-    QString strLoggerFile;
-
-    //Parametros de comunicaciones para peticiones y respuestas
-    int intSnmpPortNms;
-    int intSnmpPortAgent;
-
-    //Parametros de comunicaciones para Traps
-    int intSnmpTrapPortNms;
-    int intSnmpTrapPortAgent;
-    QStringList strSnmpTrapAddressNms;
-    QString strSnmpTrapAddressAgent;
+    //Properties parameters
+    QMap<QString,QString> properties_;
 
 signals:
 

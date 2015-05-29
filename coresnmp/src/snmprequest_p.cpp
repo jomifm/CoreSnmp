@@ -1,6 +1,7 @@
 #include "snmprequest_p.h"
 
 #include <snmp/snmprequest.h>
+#include <snmp/exceptions/snmpexception.h>
 
 #include "configuration/parameters.h"
 #include "types/snmpversion.h"
@@ -15,21 +16,22 @@
 #include "types/pdu/snmpvarbind.h"
 #include "types/pdu/snmpvarbindlist.h"
 #include "types/utils/snmptypefactory.h"
+#include "utils/logger/utilslogger.h"
 
 #include <QUdpSocket>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <QtCore>
+
 #ifdef QT_SNMP_DEBUG
 #include <QDebug>
 #endif
 
-#define BUFFER_SIZE					512*1024
-
 SnmpRequest *SnmpRequest::instance(QObject *parent)
 {
 	//Instancia los parametros de configuracion
-	Parameters::create();
+	Parameters::instance();
 	static SnmpRequest *snmpRequest = new SnmpRequestPriv(parent);
 	return snmpRequest;
 }
@@ -37,26 +39,24 @@ SnmpRequest *SnmpRequest::instance(QObject *parent)
 SnmpRequestPriv::SnmpRequestPriv(QObject *parent) :
     SnmpRequest(parent)
 {    
-	qDebug() << "Creating SnmpRequestPriv object";
-	Type::registerMetatypes();
+	LogInfo << "Creating SnmpRequestPriv object";
 
 	//Create new udp socket
 	socket_ = new QUdpSocket(this);
-    socket_->bind(Parameters::getSnmpPortAgent());
+    socket_->bind(QHostAddress::Any, Parameters::get(Params::AgentPort).toInt(),
+    		QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
+    connect(socket_,SIGNAL(readyRead()),SLOT(readPendingDatagram()));
 
-	//actualizamos la opcion TTL a 10
+	//Custom configuration of udp socket
     socket_->setSocketOption(QAbstractSocket::MulticastTtlOption, 10);
-
-	//activamos el loopback
     socket_->setSocketOption(QAbstractSocket::MulticastLoopbackOption, 1);
 
-    quint32 len = BUFFER_SIZE;
+    //Configurate socket buffers
+    quint32 len = 512 * 1024;
     setsockopt(socket_->socketDescriptor(), SOL_SOCKET, SO_SNDBUF, &len, sizeof(len));
     setsockopt(socket_->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, &len, sizeof(len));
 
-    connect(socket_,SIGNAL(readyRead()),SLOT(readPendingDatagram()));
-
-    qDebug() << "Socket state:" << socket_->state() << socket_->errorString();
+    LogInfo << "Socket state:" << socket_->state() << socket_->errorString();
     if (socket_->error() != QAbstractSocket::UnknownSocketError)
     	throw SnmpException(QString("Error opening or configuring socket"));
 }
@@ -108,21 +108,30 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
     ProtocolDataUnit *pdu = NULL;
     qint64 bytesSent = 0;
 
-    //Message initialization
+    //Version message initialization
     version = new SnmpVersion(snmpData->getVersion());
+
+    //Community string initialization
+
+    if (snmpData->getCommunity().isEmpty() && snmpData->getType() == Type::SetRequestPDU)
+    	snmpData->setCommunity(SnmpData::getSnmpRwCommunity());
+    else if (snmpData->getCommunity().isEmpty())
+    	snmpData->setCommunity(SnmpData::getSnmpRoCommunity());
     community = new OctetString(snmpData->getCommunity());
 
     //Setting header values
     if (snmpData->getIdRequest())
     	requestId = new Integer(snmpData->getIdRequest());
-    else requestId = new Integer(SnmpData::getNextRequestId());
+    else {
+    	requestId = new Integer(SnmpData::getNextRequestId());
+    	snmpData->setIdRequest(requestId->getValue());
+    }
     error = new Integer(0);
 
     //Set values related from bulk request
     if (snmpData->getType() == Type::GetBulkRequestPDU)
     	errorIndex = new Integer(snmpData->getRetries());
     else errorIndex = new Integer(0);
-
 
     //Check request type
     if (snmpData->getType() == Type::SetRequestPDU)
@@ -182,13 +191,20 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
     for (QStringList::const_iterator iterPeer = peerList.begin();
     		iterPeer != peerList.end(); ++iterPeer) {
     	//Send datagram to destination peer
-    	bytesSent = socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::getSnmpPortNms());
+    	bytesSent = socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::get(Params::NmsPort).toInt());
     	if (bytesSent != (qint64)datagram.size())
     		throw SnmpException("Error sending datagram in UDP socket");
     }
 
-    qDebug() << "SNMP request sent" << datagram.toHex().data();
-    qDebug() << snmpMessage.toString();
+    //Event connection for snmp request timeout
+    snmpData->snmpTimerStart();
+    connect(snmpData, SIGNAL(eventSnmpTimeout()),
+    		this, SLOT(onEventSnmpTimeout()), Qt::UniqueConnection);
+    connect(snmpData, SIGNAL(eventSnmpRetry()),
+    		this, SLOT(onEventSnmpRetry()), Qt::UniqueConnection);
+
+    LogInfo << "SNMP request sent" << datagram.toHex().data();
+    LogInfo << snmpMessage.toString();
 }
 
 void SnmpRequestPriv::readPendingDatagram()
@@ -219,7 +235,7 @@ void SnmpRequestPriv::readPendingDatagram()
         if (type != Type::Sequence)
             throw SnmpException("Wrong response");
 
-        qDebug() << "SNMP Response received (size:"
+        LogInfo << "SNMP Response received (size:"
         		<< datagram.size() << "): " << datagram.toHex().data();
 
         quint32 bytesRead = 0;
@@ -242,7 +258,7 @@ void SnmpRequestPriv::readPendingDatagram()
             mapValues.insert(varbind->getObjectIdentifier()->toString(), varbind->getValue());
         }
 
-        qDebug() << snmpMessage.toString();
+        LogInfo << snmpMessage.toString();
 
         //Check pending request list
         intRequestId = snmpMessage.getProtocolDataUnit()->getRequestId()->getValue();
@@ -250,7 +266,7 @@ void SnmpRequestPriv::readPendingDatagram()
         if (iterRequest == mapRequests.end()) {
 
         	//Not received response related with any pending request
-        	qDebug() << "SNMP Response not delivered without pending request operation.";
+        	LogInfo << "SNMP Response not delivered without pending request operation.";
 
 			//Emit response event for registered listeners
 			emit eventSnmpResponse(QSharedPointer<SnmpDataPriv>(new SnmpDataPriv(Type::RequestUnknown)));
@@ -259,6 +275,9 @@ void SnmpRequestPriv::readPendingDatagram()
 
     		//Get object request data
         	snmpData = static_cast<SnmpDataPriv*>(iterRequest->data());
+
+        	//Set sender data
+        	snmpData->setSourceAddress(sender.toString());
 
         	//Check when request is a walk
         	if (snmpData->getType() == Type::GetNextRequestPDU)
@@ -280,11 +299,19 @@ void SnmpRequestPriv::readPendingDatagram()
         			snmpData->setObjectList(QStringList() << mapValues.begin().key());
             		snmpData->insertValueList(strResponseOid, value);
 
+        			//Stop snmp request timer
+        			snmpData->snmpTimerStop();
+        		    disconnect(snmpData, 0, this, 0);
+
         			//Performing next request with get type
         			request(*iterRequest);
         		}
         		else
         		{
+        			//Stop snmp request timer
+        		    disconnect(snmpData, 0, this, 0);
+        			snmpData->snmpTimerStop();
+
             		//Emit response event for registered listeners
             		emit eventSnmpResponse(*iterRequest);
 
@@ -294,6 +321,10 @@ void SnmpRequestPriv::readPendingDatagram()
         	}
         	else
         	{
+    			//Stop snmp request timer
+    		    disconnect(snmpData, 0, this, 0);
+    			snmpData->snmpTimerStop();
+
         		//Setting object values
         		snmpData->setValueList(mapValues);
 
@@ -308,4 +339,51 @@ void SnmpRequestPriv::readPendingDatagram()
         //Clean response list
         responseList.clear();
     }
+}
+
+void SnmpRequestPriv::onEventSnmpRetry()
+{
+	LogInfo << "Timeout" << sender();
+
+	//Variables declaration
+	SnmpDataPriv *snmpData = NULL;
+    IRequestObject iterRequest;
+
+	//Get snmp data
+	snmpData = (SnmpDataPriv*)sender();
+
+	//Search shared pointer
+	iterRequest = mapRequests.find(snmpData->getIdRequest());
+	if (iterRequest != mapRequests.end())
+	{
+		//Retrying request
+		request(*iterRequest);
+	}
+	else throw SnmpException(QString("Error generating retry event without existing or pending request"));
+}
+
+void SnmpRequestPriv::onEventSnmpTimeout()
+{
+	LogInfo << "Timeout" << sender();
+
+	//Variables declaration
+	SnmpDataPriv *snmpData = NULL;
+    IRequestObject iterRequest;
+
+	//Set timeout error
+	snmpData = (SnmpDataPriv*)sender();
+	snmpData->setErrorMsg(Type::RequestTimeout);
+    disconnect(snmpData, 0, this, 0);
+
+	//Search shared pointer
+	iterRequest = mapRequests.find(snmpData->getIdRequest());
+	if (iterRequest != mapRequests.end())
+	{
+		//Emit response event for registered listeners
+		emit eventSnmpResponse(*iterRequest);
+
+		//Removing responsed request
+		mapRequests.erase(iterRequest);
+	}
+	else throw SnmpException(QString("Error generating timeout event without pending request"));
 }

@@ -1,0 +1,166 @@
+CORESNMP-TEST-MIB    DEFINITIONS ::= BEGIN
+
+--
+--  This MIB defines the management interface between the SMA an
+--  the SCM in the ACCS LOC1 Program.
+--
+IMPORTS
+	MODULE-IDENTITY, OBJECT-TYPE, 
+	OBJECT-IDENTITY, enterprises 
+		FROM SNMPv2-SMI          
+    DisplayString
+        FROM RFC1213-MIB
+	TRAP-TYPE
+		FROM RFC-1215
+	NOTIFICATION-TYPE
+		FROM SNMPv2-SMI         
+;
+
+--
+-- OID definitions
+-- 
+company		OBJECT IDENTIFIER ::= { enterprises 91 }product		OBJECT IDENTIFIER ::= { company 92 }project		OBJECT IDENTIFIER ::= { product 93 }
+
+--
+-- Test groups
+--    
+testGroupVariables	OBJECT IDENTIFIER ::= { project 1 }
+testTraps			OBJECT IDENTIFIER ::= { project 2 }
+
+netSnmpExampleNotifications OBJECT IDENTIFIER ::= { project 3 }
+netSnmpExampleNotificationPrefix  OBJECT IDENTIFIER
+                                  ::= { netSnmpExampleNotifications 0 }
+netSnmpExampleNotificationObjects OBJECT IDENTIFIER
+                                  ::= { netSnmpExampleNotifications 2 }
+     
+--
+-- Local data types
+--    
+TestString ::= TEXTUAL-CONVENTION 
+    STATUS          current
+    DESCRIPTION     "String test type."
+    SYNTAX DisplayString  ( SIZE ( 0 .. 255  ) ) 
+
+--
+-- Test Variables Group.
+--    
+testString1    OBJECT-TYPE    
+   SYNTAX       TestString
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "String Test 1"
+   ::=  {  testGroupVariables  1  }
+  
+testString2    OBJECT-TYPE    
+   SYNTAX       TestString
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "String Test 2"
+   ::=  {  testGroupVariables  2  }
+  
+testString3    OBJECT-TYPE    
+   SYNTAX       TestString
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "String Test 3"
+   ::=  {  testGroupVariables  3  }
+  
+testString4    OBJECT-TYPE    
+   SYNTAX       TestString
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "String Test 4"
+   ::=  {  testGroupVariables  4  }
+  
+testInt1    OBJECT-TYPE    
+   SYNTAX       INTEGER
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "Integer Test 1"
+   ::=  {  testGroupVariables  5  }
+  
+testInt2    OBJECT-TYPE    
+   SYNTAX       INTEGER
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "Integer Test 2"
+   ::=  {  testGroupVariables  6  }
+  
+testIp1    OBJECT-TYPE    
+   SYNTAX       IpAddress
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "Ip Test 1"
+   ::=  {  testGroupVariables  7  }
+  
+testIp2    OBJECT-TYPE    
+   SYNTAX       IpAddress
+   MAX-ACCESS   read-write
+   STATUS       current
+   DESCRIPTION  "Ip Test 2"
+   ::=  {  testGroupVariables  8  }
+ 
+--
+-- Traps Group.
+--    
+testDemoTrap TRAP-TYPE
+   ENTERPRISE testTraps
+   VARIABLES { testString1 }
+   DESCRIPTION "An example of an SMIv1 trap"
+   ::= 1
+
+--
+-- Notifcations Objects.
+--    
+netSnmpExampleHeartbeatName OBJECT-TYPE
+    SYNTAX      TestString
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "A simple string object, to act as an optional payload
+         for the netSnmpExampleHeartbeatNotification.  This varbind
+         is not part of the notification definition, so is optional
+         and need not be included in the notification payload. 
+         The value has no real meaning, but the romantically inclined
+         may take it to be the object of the sender's affection,
+         and hence the cause of the heart beating faster."
+::= { netSnmpExampleNotificationObjects 2 }
+
+netSnmpExampleHeartbeatRate OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "A simple integer object, to act as a payload for the
+         netSnmpExampleHeartbeatNotification.  The value has
+         no real meaning, but is nominally the interval (in
+         seconds) between successive heartbeat notifications."
+::= { netSnmpExampleNotificationObjects 1 }
+
+--
+-- Notifcations Group.
+--     
+netSnmpExampleHeartbeatNotification NOTIFICATION-TYPE
+    OBJECTS     { netSnmpExampleHeartbeatRate }
+    STATUS      current
+    DESCRIPTION
+        "An example notification, used to illustrate the
+         definition and generation of trap and inform PDUs
+         (including the use of both standard and additional
+         varbinds in the notification payload).
+         This notification will typically be sent every
+	 30 seconds, using the code found in the example module
+             agent/mibgroup/examples/notification.c"
+::= { netSnmpExampleNotificationPrefix 1 }   
+
+netSnmpExampleNotification OBJECT-TYPE
+    SYNTAX      TestString
+    MAX-ACCESS  accessible-for-notify
+    STATUS      obsolete
+    DESCRIPTION
+        "This object was improperly defined for its original purpose,
+         and should no longer be used."
+::= { netSnmpExampleNotifications 1 }
+   
+END
+

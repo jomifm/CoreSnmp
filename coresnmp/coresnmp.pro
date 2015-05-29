@@ -1,6 +1,6 @@
 #Configuracion para Libreria
 TEMPLATE = lib
-QT += core network
+QT += core network xml
 CONFIG += dll
 TARGETDIR = lib
 
@@ -41,6 +41,7 @@ debug:RCC_DIR = build/debug/$${platform}-rcc
 debug:UI_DIR = build/debug/$${platform}-ui
 
 #Seccion de Includes
+include(include/include.pri)
 include(src/src.pri)
 
 #Seccion de Includes de la aplicacion

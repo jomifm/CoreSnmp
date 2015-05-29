@@ -18,6 +18,7 @@ public:
     }
 
     QString getValue() const;
+    void setValue(const QString & strVal);
     QString toString() const;
 
 private:

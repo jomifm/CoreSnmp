@@ -1,6 +1,9 @@
 #include "types/basic/snmpobjectid.h"
 
 #include "types/basic/snmpinteger.h"
+#include "utils/logger/utilslogger.h"
+
+#include <snmp/exceptions/snmpexception.h>
 
 #include <QStringList>
 #include <QDebug>
@@ -92,7 +95,7 @@ QByteArray ObjectIdentifier::encodeData() const
         code.append(result);
     }
 
-    qDebug() << "Object Identifier Data" << code.toHex().constData();
+    LogInfo << "Object Identifier Data" << code.toHex().constData();
 
     return code;
 }

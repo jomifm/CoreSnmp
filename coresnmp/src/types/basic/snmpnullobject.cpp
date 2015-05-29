@@ -1,5 +1,7 @@
 #include "types/basic/snmpnullobject.h"
 
+#include <snmp/exceptions/snmpexception.h>
+
 NullObject::NullObject(QObject *parent) :
     SnmpBasicAbstractType(Type::NullObject, parent)
 {

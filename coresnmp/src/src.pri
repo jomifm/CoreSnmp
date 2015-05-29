@@ -1,11 +1,4 @@
 HEADERS += \
-    include/snmp/snmpdata.h \
-    include/snmp/snmpdatatypes.h \
-    include/snmp/snmprequest.h \
-    include/snmp/snmptrap.h
-
-
-HEADERS += \
     src/snmpdata_p.h \
     src/snmprequest_p.h \
     src/snmptrap_p.h
@@ -18,7 +11,7 @@ SOURCES += \
   
 HEADERS += \
     src/configuration/parameters.h \
-    src/exceptions/snmpexception.h \
+    src/configuration/snmpxmlmapper.h \
     src/types/basic/snmpbasicabstracttype.h \
     src/types/basic/snmpinteger.h \
     src/types/basic/snmpipaddress.h \
@@ -37,10 +30,12 @@ HEADERS += \
     src/types/pdu/snmpvarbindlist.h \
     src/types/utils/snmptypefactory.h \
     src/types/snmpmessage.h \
-    src/types/snmpversion.h
+    src/types/snmpversion.h \
+    src/utils/logger/utilslogger.h
 
 SOURCES += \
     src/configuration/parameters.cpp \
+    src/configuration/snmpxmlmapper.cpp \
     src/types/basic/snmpbasicabstracttype.cpp \
     src/types/basic/snmpinteger.cpp \
     src/types/basic/snmpipaddress.cpp \

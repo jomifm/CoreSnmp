@@ -1,7 +1,6 @@
 #pragma once
 
-#include "snmp/snmpdatatypes.h"
-#include "exceptions/snmpexception.h"
+#include <snmp/snmpdatatypes.h>
 
 #include <QObject>
 #include <QByteArray>

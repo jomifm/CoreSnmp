@@ -1,0 +1,30 @@
+<!-- coresnmp file-based configuration document.
+
+<!DOCTYPE coresnmp-configuration SYSTEM "coresnmp-configuration-1.0.dtd">
+
+An instance of this document contains property settings and references
+to mapping files for a number of SessionFactory instances to be listed
+in SNMP.
+
+-->
+
+<!ELEMENT coresnmp-configuration (session-factory,security?)>
+
+<!ELEMENT property (#PCDATA)>
+	<!ATTLIST property name CDATA #REQUIRED>
+
+<!ELEMENT mapping EMPTY> <!-- reference to a mapping file -->
+	<!ATTLIST mapping resource CDATA #IMPLIED>
+	<!ATTLIST mapping mib CDATA #IMPLIED>
+
+<!ELEMENT object (#PCDATA)>
+	<!ATTLIST object name CDATA #REQUIRED>
+	<!ATTLIST object oid CDATA #REQUIRED>
+	<!ATTLIST object parent CDATA #IMPLIED>
+	<!ATTLIST object type (integer|string|ipaddress) #IMPLIED>
+	<!ATTLIST object access (read-only|read-write|write-only) #IMPLIED>
+	<!ATTLIST object description CDATA #IMPLIED>
+
+<!ELEMENT trap (#PCDATA)>
+
+<!ELEMENT notification (#PCDATA)>

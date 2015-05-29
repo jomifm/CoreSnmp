@@ -4,17 +4,16 @@
 #include <QDataStream>
 #include <QHash>
 #include <QMap>
-#include <QMetaType>
 
-namespace Type {
-
+namespace Type
+{
 	enum Version {
 		SNMPv1 = 0,
 		SNMPv2c = 1,
 		SNMPv3 = 3
 	};
 
-	enum AbstractType {
+	typedef enum {
 		Unknown = 0x00,
 
 		//Object types
@@ -39,15 +38,29 @@ namespace Type {
 		GetBulkRequestPDU = 0xa5,
 		InformRequestedPDU = 0xa6,
 		NotificationPDU = 0xa7
-	};
+	} AbstractType;
 
-	enum ErrorMessage {
+	typedef enum {
+		ReadOnly,
+		ReadWrite,
+		WriteOnly,
+		NotAccessible,
+	} AccessType;
+
+	typedef enum {
+		Mandatory,
+		Optional,
+		Obsolete,
+		Deprecated,
+	} StatusType;
+
+	typedef enum {
 		//Standard snmp errors
 		NoError = 0,
 		TooBig = 1,
 		NoSuchName = 2,
 		BadValue = 3,
-		ReadOnly = 4,
+		ReadOnlyError = 4,
 		GenErr = 5,
 		NoAccess = 6,
 		WrongType = 7,
@@ -66,20 +79,59 @@ namespace Type {
 		//Custom errors
 		RequestUnknown = 98,
 		RequestTimeout = 99,
+	} ErrorMessage;
+
+	typedef QMap<QString, QObject*> MSnmpObject;
+	typedef MSnmpObject::const_iterator ISnmpObject;
+
+	class MibObject : public QObject
+	{
+		Q_OBJECT
+
+	public:
+		MibObject(QObject *parent = NULL) :  QObject(parent),
+			strName_(""),
+			strOid_(""),
+			strParent_(""),
+			type_(Unknown),
+			access_(ReadOnly),
+			status_(Mandatory),
+			strDescription_("") {}
+
+		MibObject &operator=(const MibObject &);
+
+		QString getName() const { return strName_; }
+		QString getOid() const { return strOid_; }
+		QString getParent() const { return strParent_; }
+		AbstractType getType() const { return type_; }
+		AccessType getAccess() const { return access_; }
+		StatusType getStatus() const { return status_; }
+		QString getDescription() const { return strDescription_; }
+
+		void setName(const QString & value) { strName_ = value; }
+		void setOid(const QString & value) { strOid_ = value; }
+		void setParent(const QString & value) { strParent_ = value; }
+		void setType(const AbstractType & value) { type_ = value; }
+		void setAccess(const AccessType & value) { access_ = value; }
+		void setStatus(const StatusType & value) { status_ = value; }
+		void setDescription(const QString & value) { strDescription_ = value; }
+
+	private:
+		QString strName_;
+		QString strOid_;
+		QString strParent_;
+		AbstractType type_;
+		AccessType access_;
+		StatusType status_;
+		QString strDescription_;
 	};
-
-    typedef QMap<QString, QObject*> MSnmpObject;
-    typedef MSnmpObject::const_iterator ISnmpObject;
-
-    static void registerMetatypes() {
-    	qRegisterMetaType<Type::MSnmpObject>("Type::MSnmpObject");
-    	qRegisterMetaType<Type::ISnmpObject>("Type::ISnmpObject");
-    }
+	typedef QMap<QString, MibObject*> MMibObject;
+	typedef MMibObject::const_iterator IMibObject;
 }
 
 inline QDataStream &operator >>(QDataStream &inputStream, Type::AbstractType &type) {
-    quint8 byte = 0;
-    inputStream >> byte;
-    type = static_cast<Type::AbstractType>(byte);
-    return inputStream;
+	quint8 byte = 0;
+	inputStream >> byte;
+	type = static_cast<Type::AbstractType>(byte);
+	return inputStream;
 }

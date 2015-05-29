@@ -1,5 +1,7 @@
 #include "types/basic/snmpoctetstring.h"
 
+#include "utils/logger/utilslogger.h"
+
 #include <QDataStream>
 #include <QDebug>
 
@@ -17,6 +19,11 @@ OctetString::OctetString(const QString &value, QObject *parent) :
 QString OctetString::getValue() const
 {
     return value;
+}
+
+void OctetString::setValue(const QString & strVal)
+{
+    value = strVal;
 }
 
 QString OctetString::toString() const
@@ -46,7 +53,7 @@ void OctetString::decodeData(QDataStream &inputStream, quint32 length)
         inputStream >> byte;
         buffer.append(byte);
     }
-    qDebug() << "OctetString::decodeData:" << buffer.data();
+    LogInfo << "OctetString::decodeData:" << buffer.data();
 
     value = buffer;
 }

@@ -5,6 +5,7 @@
 #include "types/basic/snmpipaddress.h"
 #include "types/basic/snmptimerticks.h"
 #include "types/pdu/snmpvarbindlist.h"
+#include "utils/logger/utilslogger.h"
 
 #include <QDebug>
 
@@ -98,7 +99,7 @@ QByteArray ProtocolDataUnit::encodeData() const
 		code.append(varbindList_->encode());
 	}
 
-    qDebug() << "Protocol Data Unit Data:" << code.toHex().constData();
+    LogInfo << "Protocol Data Unit Data:" << code.toHex().constData();
     return code;
 }
 
