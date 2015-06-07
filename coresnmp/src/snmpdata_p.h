@@ -105,21 +105,66 @@ Q_SIGNALS:
 	void eventSnmpTimeout();
 };
 
-//class SnmpTrapInfoPriv : public QObject
-//{
-//    Q_OBJECT
-//
-//private:
-//    //Trap variables
-//    quint32 intVersion_;
-//    QString strCommunity_;
-//    Type::AbstractType idType_;
-//    QString strEnterpriseOid_;
-//    quint32 intSpecificTrap_;
-//    QStringList peerList_;
-//    QStringList objectList_;
-//
-//public:
-//    SnmpTrapInfoPriv(QObject *parent = 0);
-//    ~SnmpTrapInfoPriv();
-//};
+class SnmpTrapDataPriv : public SnmpTrapData
+{
+    Q_OBJECT
+
+private:
+    //Trap variables
+	Type::Version intVersion_;
+    QString strCommunity_;
+    QString strEnterpriseOid_;
+    QString strAgentAddr_;
+    quint32 intSpecificTrap_;
+    QStringList peerList_;
+
+    //Common variables
+    Type::MSnmpObject valueList_;
+
+    //Response variables
+    QString strSourceAddress_;
+
+public:
+    SnmpTrapDataPriv(QObject *parent = 0);
+    ~SnmpTrapDataPriv();
+
+    Type::Version getVersion() const { return intVersion_; }
+    void setVersion(const Type::Version & intVersion) { intVersion_ = intVersion; }
+
+    QString getCommunity() const { return strCommunity_; }
+    void setCommunity(const QString & strCommunity) { strCommunity_ = strCommunity; }
+
+    QString getEnterpriseOid() const { return strEnterpriseOid_; }
+    void setEnterpriseOid(const QString & strEnterpriseOid) { strEnterpriseOid_ = strEnterpriseOid; }
+
+    QString getAgentAddr() const { return strAgentAddr_; }
+    void setAgentAddr(const QString & strAgentAddr) { strAgentAddr_ = strAgentAddr; }
+
+    quint32 getSpecificTrap() const { return intSpecificTrap_; }
+    void setSpecificTrap(const quint32 & intSpecificTrap) { intSpecificTrap_ = intSpecificTrap; }
+
+    QStringList getPeerList() const { return peerList_; }
+    void setPeerList(const QStringList & peerList) { peerList_ = peerList; }
+
+    //Common variables
+    Type::MSnmpObject getValueList() const { return valueList_; }
+    void setValueList(const Type::MSnmpObject & valueList) {
+    	valueList_.clear();
+    	insertValueList(valueList);
+    }
+    void insertValueList(const QString & strKey, QObject *object) {
+    	object->setParent(this);
+    	valueList_.insert(strKey, object);
+    }
+    void insertValueList(const Type::MSnmpObject & valueList) {
+    	for (Type::ISnmpObject iter = valueList.begin();
+    			iter != valueList.end(); ++iter) {
+    		iter.value()->setParent(this);
+    		valueList_.insert(iter.key(), iter.value());
+    	}
+    }
+
+    //Response variables
+    QString getSourceAddress() const { return strSourceAddress_; }
+    void setSourceAddress(const QString & strSourceAddress) { strSourceAddress_ = strSourceAddress; }
+};

@@ -14,7 +14,6 @@ class SnmpData : public QObject
 	static Type::Version snmpVersion_;
 	static QString snmpRoCommunity_;
 	static QString snmpRwCommunity_;
-	static QString snmpTrapCommunity_;
 
 public:
 	static quint32 getNextRequestId() {
@@ -32,10 +31,6 @@ public:
 	static QString getSnmpRwCommunity() { return snmpRwCommunity_; }
 	static void setSnmpRwCommunity(const QString & strRwCommunity) {
 		snmpRwCommunity_ = strRwCommunity;
-	}
-	static QString getSnmpTrapCommunity() { return snmpTrapCommunity_; }
-	static void setSnmpTrapCommunity(const QString & snmpTrapCommunity) {
-		snmpTrapCommunity_ = snmpTrapCommunity;
 	}
 
 	static SnmpData *create(QObject *parent = 0);
@@ -104,4 +99,38 @@ public:
 
 protected:
 	SnmpData (QObject *parent = 0) : QObject (parent) {}
+};
+
+class SnmpTrapData : public QObject
+{
+	Q_OBJECT
+
+	static QString snmpTrapCommunity_;
+
+public:
+	static QString getSnmpTrapCommunity() { return snmpTrapCommunity_; }
+	static void setSnmpTrapCommunity(const QString & snmpTrapCommunity) {
+		snmpTrapCommunity_ = snmpTrapCommunity;
+	}
+
+	virtual Type::Version getVersion() const = 0;
+	virtual void setVersion(const Type::Version & idVersion) = 0;
+
+	virtual QString getCommunity() const = 0;
+	virtual void setCommunity(const QString & strCommunity) = 0;
+
+	virtual QString getEnterpriseOid() const = 0;
+	virtual void setEnterpriseOid(const QString & strEnterpriseOid) = 0;
+
+	virtual QString getAgentAddr() const = 0;
+	virtual void setAgentAddr(const QString & strAgentAddr) = 0;
+
+	virtual quint32 getSpecificTrap() const = 0;
+	virtual void setSpecificTrap(const quint32 & intSpecificTrap) = 0;
+
+	virtual Type::MSnmpObject getValueList() const = 0;
+	virtual void setValueList(const Type::MSnmpObject & valueList) = 0;
+
+protected:
+	SnmpTrapData (QObject *parent = 0) : QObject (parent) {}
 };

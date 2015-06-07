@@ -6,7 +6,6 @@
 #include <snmp/exceptions/snmpexception.h>
 
 #include <QDataStream>
-#include <QDebug>
 
 static const quint32 TYPE_SIZE = 1;
 //static const quint8 LENGTH_SIZE = 1;
@@ -58,9 +57,9 @@ int SnmpBasicAbstractType::decode(QDataStream &inputStream)
     }
     else inputStream >> dataLength32;
 
-    LogInfo << "Start decoding:" << this;
+    LogDebug << "Start decoding:" << this;
     decodeData(inputStream, dataLength32);
-    LogInfo << "Decoded:" << this;
+    LogDebug << "Decoded:" << this;
 
     return intSizeLenght_ + dataLength32;
 }
@@ -83,4 +82,10 @@ QString SnmpBasicAbstractType::toString() const
 QObject *SnmpBasicAbstractType::toObject()
 {
     return dynamic_cast<QObject*>(this);
+}
+
+SnmpBasicAbstractType *SnmpBasicAbstractType::clone()
+{
+	SnmpBasicAbstractType *abstract = NULL;
+	return abstract;
 }

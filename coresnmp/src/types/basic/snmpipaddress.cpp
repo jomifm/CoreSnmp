@@ -4,10 +4,6 @@
 #include <QHostAddress>
 #include <qendian.h>
 
-#ifdef QT_SNMP_DEBUG
-#include <QDebug>
-#endif
-
 #define HIGH_BIT 0x80
 
 IpAddress::IpAddress(QObject *parent) :

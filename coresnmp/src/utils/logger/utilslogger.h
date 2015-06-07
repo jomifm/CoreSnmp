@@ -31,6 +31,12 @@
 class CoreSnmpLogger : public QObject
 {
     Q_OBJECT
+
+public:
+    typedef enum {
+        LogLevelDebug, LogLevelInfo, LogLevelWarning, LogLevelError, LogLevelCritical
+    } EnumLogLevel;
+
 public:
     /**
      * Constructor
@@ -44,10 +50,6 @@ public:
      */
     virtual ~CoreSnmpLogger() { }
 
-    typedef enum {
-        LogLevelDebug, LogLevelInfo, LogLevelWarning, LogLevelError, LogLevelCritical
-    } EnumLogLevel;
-
 #if QT_VERSION >= 0x050000
     static void MyLogger(QtMsgType type, const QMessageLogContext &context, const QString &msg)
     {
@@ -58,7 +60,7 @@ public:
 #endif
         //Declaracion de Variables
         QString strLog = "";
-        //EnumLogLevel level;
+        EnumLogLevel level = LogLevelInfo;
 
 #if QT_VERSION >= 0x050000
         QString strFunction = context.function;
@@ -67,16 +69,17 @@ public:
 #endif
 
         //Obtiene el Tipo de Log
-//        if (type == QtDebugMsg) level = LogLevelDebug;
-//        else if (type == QtWarningMsg) level = LogLevelInfo;
-//        else if (type == QtCriticalMsg) level = LogLevelWarning;
-//        else if (type == QtFatalMsg) level = LogLevelError;
-//        else level = LogLevelInfo;
+        if (type == QtDebugMsg) level = LogLevelDebug;
+        else if (type == QtWarningMsg) level = LogLevelInfo;
+        else if (type == QtCriticalMsg) level = LogLevelWarning;
+        else if (type == QtFatalMsg) level = LogLevelError;
+        else level = LogLevelInfo;
 
         //Comprueba el Nivel de Log
-        //if (LogLevel == LogLevelError && level < LogLevelError) return;
-        //else if (LogLevel == LogLevelWarning && level < LogLevelError) return;
-        //else if (LogLevel == LogLevelInfo && level < LogLevelInfo) return;
+        EnumLogLevel customLevel = LogLevelInfo;
+        if (customLevel == LogLevelError && level < LogLevelError) return;
+        else if (customLevel == LogLevelWarning && level < LogLevelError) return;
+        else if (customLevel == LogLevelInfo && level < LogLevelInfo) return;
 
         //Establece la Fecha y Hora
         strLog = QString("%1 %2 ").arg(__DATE__).arg(__TIME__);
@@ -112,5 +115,6 @@ public:
         //Check fatal application error
         //if (type == QtFatalMsg) abort();
     }
+
 };
 

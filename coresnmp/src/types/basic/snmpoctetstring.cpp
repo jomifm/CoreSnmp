@@ -3,7 +3,6 @@
 #include "utils/logger/utilslogger.h"
 
 #include <QDataStream>
-#include <QDebug>
 
 OctetString::OctetString(QObject *parent) :
     SnmpBasicAbstractType(Type::OctetString, parent)
@@ -53,7 +52,15 @@ void OctetString::decodeData(QDataStream &inputStream, quint32 length)
         inputStream >> byte;
         buffer.append(byte);
     }
-    LogInfo << "OctetString::decodeData:" << buffer.data();
+    LogDebug << "OctetString::decodeData:" << buffer.data();
 
     value = buffer;
+}
+
+SnmpBasicAbstractType *OctetString::clone()
+{
+	SnmpBasicAbstractType *abstract = NULL;
+	OctetString *clon = new OctetString(value);
+	abstract = static_cast<SnmpBasicAbstractType*>(clon);
+	return abstract;
 }

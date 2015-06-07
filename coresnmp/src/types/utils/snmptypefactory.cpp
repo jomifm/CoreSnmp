@@ -14,8 +14,6 @@
 #include "types/pdu/snmpsetrequestpdu.h"
 #include "types/pdu/snmptrappdu.h"
 
-#include <QDebug>
-
 SnmpTypeFactory::SnmpTypeFactory()
 {
 }

@@ -21,6 +21,8 @@ public:
     void setValue(const QString & strVal);
     QString toString() const;
 
+    SnmpBasicAbstractType *clone();
+
 private:
     quint32 getDataLength() const;
     QByteArray encodeData() const;

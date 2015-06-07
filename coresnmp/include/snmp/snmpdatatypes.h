@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QObject>
 #include <QDataStream>
 #include <QHash>
 #include <QMap>

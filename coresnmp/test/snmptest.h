@@ -8,6 +8,7 @@
 class SnmpRequest;
 class SnmpTrap;
 class SnmpData;
+class SnmpTrapData;
 
 class SnmpTest : public QObject
 {
@@ -16,6 +17,7 @@ class SnmpTest : public QObject
 public:
     //Constructor
     SnmpTest(QObject *parent = 0);
+    ~SnmpTest();
 
     //Initialize snmp test and move to thread
     void init();
@@ -56,10 +58,17 @@ public slots:
 	void onEventSnmpResponse(QSharedPointer <SnmpData> snmpData);
 
 	//Performs tasks and actions after receive snmp traps
-	void onEventSnmpReceiveTrap(QSharedPointer <SnmpData> data);
+	void onEventSnmpReceiveTrap(QSharedPointer <SnmpTrapData> trapData);
 
 Q_SIGNALS:
 	//Event to perform context change sent in initilization
 	void eventInit();
 
+public:
+    void timerStart();
+    void timerStop();
+
+protected:
+    int timerId_;
+    void timerEvent(QTimerEvent *event);
 };

@@ -3,7 +3,7 @@
 #include <snmp/snmprequest.h>
 #include <snmp/exceptions/snmpexception.h>
 
-#include "configuration/parameters.h"
+#include "configuration/configuration.h"
 #include "types/snmpversion.h"
 #include "types/snmpmessage.h"
 #include "types/basic/snmpnull.h"
@@ -18,20 +18,16 @@
 #include "types/utils/snmptypefactory.h"
 #include "utils/logger/utilslogger.h"
 
+#include <QtCore>
 #include <QUdpSocket>
 #include <sys/socket.h>
+
 #include <unistd.h>
-
-#include <QtCore>
-
-#ifdef QT_SNMP_DEBUG
-#include <QDebug>
-#endif
 
 SnmpRequest *SnmpRequest::instance(QObject *parent)
 {
 	//Instancia los parametros de configuracion
-	Parameters::instance();
+	Configuration::instance();
 	static SnmpRequest *snmpRequest = new SnmpRequestPriv(parent);
 	return snmpRequest;
 }
@@ -39,11 +35,11 @@ SnmpRequest *SnmpRequest::instance(QObject *parent)
 SnmpRequestPriv::SnmpRequestPriv(QObject *parent) :
     SnmpRequest(parent)
 {    
-	LogInfo << "Creating SnmpRequestPriv object";
+	LogDebug << "Creating SnmpRequestPriv object";
 
 	//Create new udp socket
 	socket_ = new QUdpSocket(this);
-    socket_->bind(QHostAddress::Any, Parameters::get(Params::AgentPort).toInt(),
+    socket_->bind(QHostAddress::Any, Configuration::get(Params::AgentPort).toInt(),
     		QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
     connect(socket_,SIGNAL(readyRead()),SLOT(readPendingDatagram()));
 
@@ -56,7 +52,7 @@ SnmpRequestPriv::SnmpRequestPriv(QObject *parent) :
     setsockopt(socket_->socketDescriptor(), SOL_SOCKET, SO_SNDBUF, &len, sizeof(len));
     setsockopt(socket_->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, &len, sizeof(len));
 
-    LogInfo << "Socket state:" << socket_->state() << socket_->errorString();
+    LogDebug << "Socket state:" << socket_->state() << socket_->errorString();
     if (socket_->error() != QAbstractSocket::UnknownSocketError)
     	throw SnmpException(QString("Error opening or configuring socket"));
 }
@@ -112,7 +108,6 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
     version = new SnmpVersion(snmpData->getVersion());
 
     //Community string initialization
-
     if (snmpData->getCommunity().isEmpty() && snmpData->getType() == Type::SetRequestPDU)
     	snmpData->setCommunity(SnmpData::getSnmpRwCommunity());
     else if (snmpData->getCommunity().isEmpty())
@@ -143,10 +138,16 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
 		{
 			//Create object identifier
 			objectIdentifier = new ObjectIdentifier(iterVal.key());
-			value = static_cast<SnmpBasicAbstractType*>(iterVal.value());
+
+			//Check object type
+			SnmpBasicAbstractType *abstract = NULL;
+			abstract = (static_cast<SnmpBasicAbstractType*>(iterVal.value()))->clone();
+			if (NULL == abstract) {
+				throw SnmpException("Error creating Snmp Objects in Set request PDU composition.");
+			}
 
 			//Append object identifier in varbind list with null value
-			seq << new Varbind(objectIdentifier, value);
+			seq << new Varbind(objectIdentifier, abstract);
 		}
     }
     else
@@ -191,10 +192,14 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
     for (QStringList::const_iterator iterPeer = peerList.begin();
     		iterPeer != peerList.end(); ++iterPeer) {
     	//Send datagram to destination peer
-    	bytesSent = socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::get(Params::NmsPort).toInt());
+    	bytesSent = socket_->writeDatagram(datagram,
+    			QHostAddress(*iterPeer), Configuration::get(Params::NmsPort).toInt());
     	if (bytesSent != (qint64)datagram.size())
     		throw SnmpException("Error sending datagram in UDP socket");
     }
+
+    LogInfo << "SNMP request sent" << datagram.toHex().data();
+    LogInfo << snmpMessage.toString();
 
     //Event connection for snmp request timeout
     snmpData->snmpTimerStart();
@@ -202,9 +207,6 @@ void SnmpRequestPriv::request (QSharedPointer<SnmpData> data)
     		this, SLOT(onEventSnmpTimeout()), Qt::UniqueConnection);
     connect(snmpData, SIGNAL(eventSnmpRetry()),
     		this, SLOT(onEventSnmpRetry()), Qt::UniqueConnection);
-
-    LogInfo << "SNMP request sent" << datagram.toHex().data();
-    LogInfo << snmpMessage.toString();
 }
 
 void SnmpRequestPriv::readPendingDatagram()
@@ -269,7 +271,7 @@ void SnmpRequestPriv::readPendingDatagram()
         	LogInfo << "SNMP Response not delivered without pending request operation.";
 
 			//Emit response event for registered listeners
-			emit eventSnmpResponse(QSharedPointer<SnmpDataPriv>(new SnmpDataPriv(Type::RequestUnknown)));
+			emit eventSnmpResponse(QSharedPointer<SnmpData>(new SnmpDataPriv(Type::RequestUnknown)));
         }
         else {
 
@@ -343,7 +345,7 @@ void SnmpRequestPriv::readPendingDatagram()
 
 void SnmpRequestPriv::onEventSnmpRetry()
 {
-	LogInfo << "Timeout" << sender();
+	LogInfo << "Event Snmp Retry" << sender();
 
 	//Variables declaration
 	SnmpDataPriv *snmpData = NULL;
@@ -364,7 +366,7 @@ void SnmpRequestPriv::onEventSnmpRetry()
 
 void SnmpRequestPriv::onEventSnmpTimeout()
 {
-	LogInfo << "Timeout" << sender();
+	LogInfo << "Event Snmp Timeout" << sender();
 
 	//Variables declaration
 	SnmpDataPriv *snmpData = NULL;

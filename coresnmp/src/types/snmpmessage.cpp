@@ -4,10 +4,6 @@
 #include "types/basic/snmpoctetstring.h"
 #include "types/pdu/snmppdu.h"
 
-#ifdef QT_SNMP_DEBUG
-#include <QDebug>
-#endif
-
 enum DataPosition {
     SnmpVersionPosition = 0,
     CommunityPosition = 1,

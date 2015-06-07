@@ -1,13 +1,12 @@
 #include "snmpdata_p.h"
 
-#include <QDebug>
 #include <QTimerEvent>
 
 quint32 SnmpData::snmpRequestId_ = 0;
 Type::Version SnmpData::snmpVersion_ = Type::SNMPv1;
 QString SnmpData::snmpRoCommunity_ = QString("public");
 QString SnmpData::snmpRwCommunity_ = QString("private");
-QString SnmpData::snmpTrapCommunity_ = QString("public");
+QString SnmpTrapData::snmpTrapCommunity_ = QString("public");
 
 SnmpData *SnmpData::create(QObject *parent)
 {
@@ -156,11 +155,19 @@ void SnmpDataPriv::timerEvent(QTimerEvent *)
 	else emit eventSnmpRetry();
 }
 
-//SnmpTrapInfoPriv::SnmpTrapInfoPriv(QObject *parent) :
-//	QObject(parent)
-//{
-//}
-//
-//SnmpTrapInfoPriv::~SnmpTrapInfoPriv()
-//{
-//}
+SnmpTrapDataPriv::SnmpTrapDataPriv(QObject *parent) :
+		SnmpTrapData(parent),
+	intVersion_(Type::SNMPv1),
+    strCommunity_(""),
+    strEnterpriseOid_(""),
+	strAgentAddr_(""),
+    intSpecificTrap_(0),
+    strSourceAddress_("")
+{
+	peerList_.clear();
+	valueList_.clear();
+}
+
+SnmpTrapDataPriv::~SnmpTrapDataPriv()
+{
+}

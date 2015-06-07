@@ -17,7 +17,7 @@
    <property name="connection.request.agent.port">1610</property>
 
    <property name="connection.trap.nms.address">192.168.255.255</property>
-   <property name="connection.trap.nms.port">1620</property>
+   <property name="connection.trap.nms.port">162</property>
    <property name="connection.trap.agent.port">1620</property>
 
    <mapping resource="cfg/coresnmp-requests.mib.xml"/>

@@ -24,6 +24,8 @@ public:
     virtual QString toString() const;
     virtual QObject *toObject();
 
+    virtual SnmpBasicAbstractType *clone();
+
 private:
     quint32 intSizeLenght_;
     virtual quint32 getDataLength() const = 0;

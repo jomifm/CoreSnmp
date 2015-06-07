@@ -2,10 +2,6 @@
 
 #include <QDataStream>
 
-//#ifdef QT_SNMP_DEBUG
-#include <QDebug>
-//#endif
-
 #define HIGH_BIT 0x80
 
 Integer::Integer(QObject *parent) :

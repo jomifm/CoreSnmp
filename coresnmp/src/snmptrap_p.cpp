@@ -3,7 +3,7 @@
 #include <snmp/snmptrap.h>
 #include <snmp/exceptions/snmpexception.h>
 
-#include "configuration/parameters.h"
+#include "configuration/configuration.h"
 #include "types/snmpversion.h"
 #include "types/snmpmessage.h"
 #include "types/basic/snmpipaddress.h"
@@ -25,7 +25,7 @@
 SnmpTrap *SnmpTrap::instance(QObject *parent)
 {
 	//Instancia los parametros de configuracion
-	Parameters::instance();
+	Configuration::instance();
 
 	static SnmpTrap *snmpRequest = new SnmpTrapPriv(parent);
 	return snmpRequest;
@@ -34,11 +34,11 @@ SnmpTrap *SnmpTrap::instance(QObject *parent)
 SnmpTrapPriv::SnmpTrapPriv(QObject *parent) :
     SnmpTrap(parent)
 {    
-	LogInfo << "Creating SnmpTrapPriv object";
+	LogDebug << "Creating SnmpTrapPriv object";
 
 	//Create new udp socket
 	socket_ = new QUdpSocket(this);
-    socket_->bind(QHostAddress::Any, Parameters::get(Params::TrapAgentPort).toInt(),
+    socket_->bind(QHostAddress::Any, Configuration::get(Params::TrapAgentPort).toInt(),
     		QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
     connect(socket_,SIGNAL(readyRead()),SLOT(readPendingDatagram()));
 
@@ -46,7 +46,7 @@ SnmpTrapPriv::SnmpTrapPriv(QObject *parent) :
     socket_->setSocketOption(QAbstractSocket::MulticastTtlOption, 10);
     socket_->setSocketOption(QAbstractSocket::MulticastLoopbackOption, 1);
 
-    LogInfo << "Socket state:" << socket_->state() << socket_->errorString();
+    LogDebug << "Socket state:" << socket_->state() << socket_->errorString();
     if (socket_->error() != QAbstractSocket::UnknownSocketError)
     	throw SnmpException(QString("Error opening or configuring socket"));
 }
@@ -54,7 +54,7 @@ SnmpTrapPriv::SnmpTrapPriv(QObject *parent) :
 void SnmpTrapPriv::trap(const QString &strTrapId,
 		const QString &addressSrc, const Type::MSnmpObject &objectMap)
 {
-	this->trap (Parameters::get(Params::TrapNmsAddress).split(","), strTrapId, addressSrc, objectMap);
+	this->trap (Configuration::get(Params::TrapNmsAddress).split(","), strTrapId, addressSrc, objectMap);
 }
 
 void SnmpTrapPriv::trap(const QStringList &peerList, const QString &strTrapId,
@@ -104,9 +104,12 @@ void SnmpTrapPriv::trap(const QStringList &peerList, const QString &strTrapId,
 
     //Processing destination peer list
     for (QStringList::const_iterator iterPeer = peerList.begin();
-    		iterPeer != peerList.end(); ++iterPeer)
+    		iterPeer != peerList.end(); ++iterPeer) {
+
     	//Send datagram to destination peer
-    	socket_->writeDatagram(datagram, QHostAddress(*iterPeer), Parameters::get(Params::TrapNmsPort).toInt());
+    	socket_->writeDatagram(datagram, QHostAddress(*iterPeer),
+    			Configuration::get(Params::TrapNmsPort).toInt());
+    }
 
     LogInfo << "SNMP Trap sent" << datagram.toHex().data();
     LogInfo << snmpMessage.toString();
@@ -142,22 +145,32 @@ void SnmpTrapPriv::readPendingDatagram()
         bytesRead += snmpMessage.decode(stream);
 
         //Get response information in PDU sequence
-        QStringList responses;
+        Type::MSnmpObject mapObjects;
         VarbindList *varbindList = snmpMessage.getProtocolDataUnit()->getVarbindList();
         foreach (Varbind *varbind, varbindList->getVarbinds()) {
-            responses += QString("%1 = %2 : %3")
-                    .arg(varbind->getObjectIdentifier()->toString())
-                    .arg(SnmpTypeFactory::getTypeName(varbind->getValue()->getType()))
-                    .arg(varbind->getValue()->toString());
-
-            responseList_.append(varbind->getValue()->toString());
+//            responses += QString("%1 = %2 : %3")
+//                    .arg(varbind->getObjectIdentifier()->toString())
+//                    .arg(SnmpTypeFactory::getTypeName(varbind->getValue()->getType()))
+//                    .arg(varbind->getValue()->toString());
+            mapObjects.insert(varbind->getObjectIdentifier()->toString(), varbind->getValue());
         }
 
         LogInfo << "SNMP Trap received" << datagram.toHex().data();
         LogInfo << snmpMessage.toString();
 
+        //Create trap information data
+        SnmpTrapDataPriv *data = new SnmpTrapDataPriv();
+        data->setVersion(snmpMessage.getSnmpVersion()->getVersion());
+        data->setCommunity(snmpMessage.getCommunity()->toString());
+        data->setEnterpriseOid(snmpMessage.getProtocolDataUnit()->getTrapId()->toString());
+        data->setAgentAddr(snmpMessage.getProtocolDataUnit()->getAgentAddr()->toString());
+        data->setSpecificTrap(snmpMessage.getProtocolDataUnit()->getSpecificTrap()->getValue());
+
+        //Setting variables bindings
+        data->setValueList(mapObjects);
+
         //Emit response event for registered listeners
-        emit eventSnmpReceiveTrap(responseList_);
+        emit eventSnmpReceiveTrap(QSharedPointer<SnmpTrapData>(data));
 
         //Clean response list
         responseList_.clear();

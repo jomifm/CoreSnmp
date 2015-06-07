@@ -10,8 +10,8 @@ SOURCES += \
     
   
 HEADERS += \
-    src/configuration/parameters.h \
-    src/configuration/snmpxmlmapper.h \
+    src/configuration/configuration.h \
+    src/configuration/xmlreader.h \
     src/types/basic/snmpbasicabstracttype.h \
     src/types/basic/snmpinteger.h \
     src/types/basic/snmpipaddress.h \
@@ -34,8 +34,8 @@ HEADERS += \
     src/utils/logger/utilslogger.h
 
 SOURCES += \
-    src/configuration/parameters.cpp \
-    src/configuration/snmpxmlmapper.cpp \
+    src/configuration/configuration.cpp \
+    src/configuration/xmlreader.cpp \
     src/types/basic/snmpbasicabstracttype.cpp \
     src/types/basic/snmpinteger.cpp \
     src/types/basic/snmpipaddress.cpp \

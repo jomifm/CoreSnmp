@@ -29,18 +29,25 @@ SnmpTest::SnmpTest(QObject *parent) : QObject(parent)
 	connect(this, SIGNAL(eventInit()), this, SLOT(onEventInit()));
 }
 
+SnmpTest::~SnmpTest()
+{
+	timerStop();
+}
+
 void SnmpTest::init()
 {
 	SnmpData::setSnmpVersion(Type::SNMPv1);
 	SnmpData::setSnmpRoCommunity("public");
 	SnmpData::setSnmpRwCommunity("private");
-	SnmpData::setSnmpTrapCommunity("public");
+	SnmpTrapData::setSnmpTrapCommunity("public");
 
 	emit eventInit();
 }
 
 void SnmpTest::onEventInit()
 {
+	timerStart();
+
 	//Snmp request object
 	snmpRequest_ = SnmpRequest::instance(this);
 	snmpRequest_->moveToThread(&myThread_);
@@ -54,28 +61,29 @@ void SnmpTest::onEventInit()
 	snmpTrap_->moveToThread(&myThread_);
 
 	//Register the object for receive messages
-	connect(snmpTrap_, SIGNAL(eventSnmpReceiveTrap(const QStringList &)),
-			this, SLOT(onEventSnmpReceiveTrap(const QStringList &)), Qt::UniqueConnection);
+	connect(snmpTrap_, SIGNAL(eventSnmpReceiveTrap(QSharedPointer<SnmpTrapData>)),
+			this, SLOT(onEventSnmpReceiveTrap(QSharedPointer<SnmpTrapData>)), Qt::UniqueConnection);
 
 	myThread_.start();
 
 	//Run test
-	test();
+	//test();
+	timerEvent(NULL);
 }
 
 void SnmpTest::test()
 {
 	//Testing get request
-    testGetRequest();
+    //testGetRequest();
 
 	//Testing set request
-    testSetRequest();
+    //testSetRequest();
 
 	//Testing walk request
-    testWalkRequest();
+    //testWalkRequest();
 
     //Testing bulk request
-    testBulkRequest();
+    //testBulkRequest();
 
     //Testing traps
     testTrap();
@@ -147,7 +155,7 @@ void SnmpTest::testSetRequest()
 void SnmpTest::testWalkRequest()
 {
     LogFuncionBegin;
-    LogInfo << "!Testing Snmp Get!";
+    LogInfo << "!Testing Snmp Walk!";
 
     QStringList dstList;
     dstList << QString("127.0.0.1");
@@ -163,7 +171,7 @@ void SnmpTest::testWalkRequest()
 void SnmpTest::testBulkRequest()
 {
     LogFuncionBegin;
-    LogInfo << "!Testing Snmp Get!";
+    LogInfo << "!Testing Snmp Bulk!";
 
     QStringList dstList;
     dstList << QString("127.0.0.1");
@@ -185,10 +193,17 @@ void SnmpTest::testTrap()
 
     Type::MSnmpObject objectList;
     objectList.insert(QString("%1.0").arg(strOidSysLocation),
-    		OctetString::create(QString("pepito"))->toObject());
+    		OctetString::create(QString("mylocation"))->toObject());
 
-    //snmpTrap_->trap(QStringList() << "127.0.0.1", strOidSysServices, "192.168.1.1", objectList)
     snmpTrap_->trap(strOidSysServices, "192.168.1.1", objectList);
+
+    Type::MSnmpObject objectList2;
+    objectList2.insert(QString("%1.0").arg(strOidSysLocation),
+    		OctetString::create(QString("otherlocation"))->toObject());
+    objectList2.insert(QString("%1.0").arg(strOidSysName),
+        		OctetString::create(QString("myname"))->toObject());
+    snmpTrap_->trap(QStringList() << "111.1.1.1", strOidSysServices, "127.0.0.1", objectList2);
+    snmpTrap_->trap(QStringList() << "127.0.0.1", strOidSysServices, "127.0.0.1", objectList2);
 
     LogFuncionEnd;
 }
@@ -232,20 +247,23 @@ void SnmpTest::onEventSnmpResponse(QSharedPointer <SnmpData> data)
 	}
 }
 
-void SnmpTest::onEventSnmpReceiveTrap(QSharedPointer <SnmpData> data)
+void SnmpTest::onEventSnmpReceiveTrap(QSharedPointer <SnmpTrapData> trapData)
 {
 	//Variables declaration
 	quint32 cntObj = 0;
-	SnmpData *snmpData = NULL;
+	SnmpTrapData *snmpData = NULL;
 
-	LogInfo << "Test received response";
-	if (data != NULL) LogInfo << data.data() << data;
+	LogInfo << "Test received Trap";
+	if (trapData != NULL) LogInfo << trapData.data() << trapData;
 	else throw SnmpException("SnmpData with NULL value in Trap management.");
 
 	//Take snmp data
-	snmpData = data.data();
+	snmpData = trapData.data();
 
-	LogInfo << "Received Snmp response [Id:" << snmpData->getIdRequest() << "]";
+	LogInfo << "Received Snmp Trap" << endl
+			<< "  [Enterprise Oid:" << snmpData->getEnterpriseOid() << "]" << endl
+			<< "  [Agent Addr:" << snmpData->getAgentAddr() << "]" << endl
+			<< "  [Specific Trap:" << snmpData->getAgentAddr() << "]";
 
 	//Process object list received from request
 	Type::MSnmpObject map = snmpData->getValueList();
@@ -254,5 +272,25 @@ void SnmpTest::onEventSnmpReceiveTrap(QSharedPointer <SnmpData> data)
 		SnmpBasicAbstractType *value = static_cast<SnmpBasicAbstractType*>(iter.value());
 		LogInfo << " - Object [" << ++cntObj << "]:" << iter.key() << value->toString();
 	}
+}
+
+void SnmpTest::timerStart()
+{
+	timerId_ = startTimer(10000);
+}
+void SnmpTest::timerStop()
+{
+	if (timerId_)
+		killTimer(timerId_);
+}
+
+void SnmpTest::timerEvent(QTimerEvent *)
+{
+	//Check retries
+	QString str = QString("ps -o %cpu,%mem,lstart,args,comm,cputime,pid,rss,vsz -p %1").arg(getpid());
+	str.append(" >> meminfo.txt");
+	system(str.toStdString().c_str());
+
+	test();
 }
 

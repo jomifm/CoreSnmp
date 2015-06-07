@@ -2,7 +2,6 @@
 
 #include <QDataStream>
 #include <QDate>
-#include <QDebug>
 
 #define HIGH_BIT 0x80
 

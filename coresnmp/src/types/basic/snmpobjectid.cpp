@@ -6,7 +6,6 @@
 #include <snmp/exceptions/snmpexception.h>
 
 #include <QStringList>
-#include <QDebug>
 
 #define HIGH_BIT 0x80
 
@@ -95,7 +94,7 @@ QByteArray ObjectIdentifier::encodeData() const
         code.append(result);
     }
 
-    LogInfo << "Object Identifier Data" << code.toHex().constData();
+    LogDebug << "Object Identifier Data" << code.toHex().constData();
 
     return code;
 }

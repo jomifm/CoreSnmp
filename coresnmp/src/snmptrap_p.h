@@ -3,6 +3,10 @@
 #include <snmp/snmpdatatypes.h>
 #include <snmp/snmptrap.h>
 
+#include "snmpdata_p.h"
+
+#include <QAbstractSocket>
+
 class QUdpSocket;
 
 class SnmpTrapPriv : public SnmpTrap

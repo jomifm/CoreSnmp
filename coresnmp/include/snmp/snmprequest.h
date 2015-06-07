@@ -1,10 +1,8 @@
 #pragma once
 
+#include <snmp/snmpdata.h>
 #include <snmp/snmpdatatypes.h>
-#include "snmpdata_p.h"
 
-#include <QObject>
-#include <QStringList>
 #include <QSharedPointer>
 
 class SnmpRequest : public QObject

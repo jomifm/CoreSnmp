@@ -1,9 +1,9 @@
 #pragma once
 
-#include "snmp/snmpdatatypes.h"
+#include <snmp/snmpdata.h>
+#include <snmp/snmpdatatypes.h>
 
-#include <QObject>
-#include <QStringList>
+#include <QSharedPointer>
 
 class SnmpTrap : public QObject
 {
@@ -22,6 +22,6 @@ protected:
 	SnmpTrap (QObject *parent = 0) : QObject (parent) {}
 
 Q_SIGNALS:
-	void eventSnmpReceiveTrap(const QStringList & objectList);
+	void eventSnmpReceiveTrap(QSharedPointer<SnmpTrapData>);
 };
 

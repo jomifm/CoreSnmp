@@ -7,8 +7,6 @@
 #include "types/pdu/snmpvarbindlist.h"
 #include "utils/logger/utilslogger.h"
 
-#include <QDebug>
-
 ProtocolDataUnit::ProtocolDataUnit(Type::AbstractType type, QObject *parent) :
     SnmpBasicAbstractType(type, parent),
     requestId_(new Integer(this)),
@@ -99,7 +97,7 @@ QByteArray ProtocolDataUnit::encodeData() const
 		code.append(varbindList_->encode());
 	}
 
-    LogInfo << "Protocol Data Unit Data:" << code.toHex().constData();
+	LogDebug << "Protocol Data Unit Data:" << code.toHex().constData();
     return code;
 }
 

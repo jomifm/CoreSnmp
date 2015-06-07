@@ -2,8 +2,6 @@
 
 #include "types/basic/snmpobjectid.h"
 
-#include <QDebug>
-
 Varbind::Varbind(ObjectIdentifier *objectIdentifier, SnmpBasicAbstractType *value, QObject *parent) :
     Sequence(SequenceData() << objectIdentifier << value, parent)
 {
